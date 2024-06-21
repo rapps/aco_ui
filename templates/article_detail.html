@@ -14,6 +14,7 @@
     <div class="main-container">
         <div  class="test hero">
             <p>publiziert: {{article.pubdate.strftime('%d.%m.%Y')}}</p>
+            <p>Quelle: <a href="{{article.url}}" target="_blank">{% if article.source |int != 0 %}Archiv{% else%}ÖAZ-Online{%  endif %}</a></p>
         </div>
         <div class="content_parent">
             <div class="toc">

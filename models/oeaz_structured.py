@@ -1,15 +1,20 @@
 import collections
 import datetime
 import json
+import re
 from pathlib import Path
+from string import Template
 from typing import List, Union, Generator, Dict, Literal, Optional
 
+from lxml import etree, html
+import html as html_
 from pydantic import BaseModel
 from pydantic_mongo import PydanticObjectId
 from pymongo.errors import DuplicateKeyError
 
 import settings
 from db.mongo import oeaz_structured, LongSessionCursor, oeaz_article
+from helpers.ws import replaceWS
 
 logger = settings.logger
 
@@ -107,8 +112,35 @@ class OeazStructuredIssue(BaseModel):
         return lsc.iter()
 
 
+
+class OeazAuthor(BaseModel):
+    title_pre:Union[str,None]=None
+    title_post:Union[str,None]=None
+    first_name:str
+    last_name:str
+    url:Union[str,None]=None
+
+    @staticmethod
+    def from_dict(indict:Dict[str,str]) ->Union['OeazAuthor', None]:
+        try:
+            author = OeazAuthor(
+                title_pre=replaceWS(indict["titlepre"]) if "titlepre" in indict else None,
+                title_post = replaceWS(indict["titlepost"]) if "titlepost" in indict else None,
+                first_name = replaceWS(indict["firstname"]).strip(),
+                last_name = replaceWS(indict["lastname"]).strip(),
+                path = indict["path"].strip()
+            )
+            return author
+        except:
+            logger.warning(f"could not parse author: {indict}")
+            return None
+
+    def to_link(self) -> str:
+        return  f"<a href='{self.path}'>{self.title_pre + ' ' if self.title_pre else ''}{self.first_name} {self.last_name}{' ' +self.title_post if self.title_post else ''}</a>"
+
+
 class OeazArticle(BaseModel):
-    id: str
+    id: Union[int, str]
     nummer: int
     sort_nr: int
     jahrgang: int
@@ -118,7 +150,11 @@ class OeazArticle(BaseModel):
     title: str
     html_raw: str = ""
     created: datetime.datetime = datetime.datetime.now()
-    pubdate: Union[datetime.datetime, None] = None
+    pubdate: datetime.datetime
+    url:Union[str, None] = None
+    author:List[OeazAuthor]=[]
+    teaser: Union[str, None] = None
+    source: int=0 # 0 = oeaz_oline, 1 = archive
     processed: int = 0
 
     def save(self) -> 'OeazArticle':
@@ -133,7 +169,7 @@ class OeazArticle(BaseModel):
         return self
 
     @staticmethod
-    def get(id: str) -> Union['OeazArticle', None]:
+    def get(id: int) -> Union['OeazArticle', None]:
         art = oeaz_article.find_one({"id": id})
         if art is None: return None
         return OeazArticle(**art)
@@ -148,9 +184,82 @@ class OeazArticle(BaseModel):
         return [OeazArticle(**item) for item in oeaz_article.find().sort("pubdate", 1).skip(skip).limit(limit)]
 
     @staticmethod
-    def delete(id: str) -> None:
+    def delete(id: int) -> None:
         oeaz_article.delete_one({"id": id})
 
     @staticmethod
     def count():
         return oeaz_article.count_documents({})
+
+
+    @staticmethod
+    def from_rest_dict(in_dict) -> 'OeazArticle':
+        #content
+        templatepath = settings.BASEPATH.joinpath("assets", "templates", "article_template.html")
+        with open(templatepath, "r") as f:
+            template = Template(f.read())
+        try:
+            title = " ".join([i if isinstance(i, str) else etree.tounicode(i) for i in in_dict["title"]])
+            subtitle =" ".join([i if isinstance(i, str) else etree.tounicode(i) for i in in_dict["subtitle"]])
+            teasertext = "".join([i if isinstance(i, str) else etree.tounicode(i) for i in in_dict["teasertext"]])
+            content = "\n".join([f"<p>{html_.escape(i)}</p>" if isinstance(i, str) else etree.tounicode(i) for i in in_dict["pagecontent"]])
+
+        except Exception as e:
+            logger.warning("Content serialization failed - ignoring article...")
+            return
+
+        html_raw = template.substitute(
+            id=in_dict["cms_id"],
+            rubrik=in_dict["channelnameraw"],
+            title=title,
+            subtitle = subtitle,
+            teasertext = teasertext,
+            content = content,
+            tags = ",".join(f"<span class='tag'>{tag}</span>" for tag in in_dict["tags"])
+        )
+        # remove styles & images (will blow up GPT cost)
+        doc = html.fromstring(html_raw)
+        for n in doc.xpath("//*"):
+            if "style" in n.attrib:
+                del n.attrib["style"]
+            if n.tag == "img":
+                n.getparent().replace(n, html.fragment_fromstring("<span class='removed_image' />"))
+        teaser = re.sub(r"\s+", " ", " ".join([i if isinstance(i, str) else ' '.join(i.itertext()) for i in in_dict["teasertext"]]))
+        title = " ".join([i if isinstance(i, str) else ' '.join(i.itertext()) for i in in_dict["title"]])
+        title += " "
+        title += " ".join([i if isinstance(i, str) else ' '.join(i.itertext()) for i in in_dict["subtitle"]])
+        title = re.sub(r"\s+", " ", title).strip()
+
+        author = []
+        if "authorjson" in in_dict:
+            if isinstance(in_dict["authorjson"], list):
+                for d in in_dict["authorjson"]:
+                    a = OeazAuthor.from_dict(d)
+                    if a: author.append(a)
+            else:
+                a = OeazAuthor.from_dict(in_dict["authorjson"])
+                if a: author.append(a)
+        else: author = []
+
+        jahrgang = in_dict["publishtimestamp"].year
+        nummer = int(f'{in_dict["publishtimestamp"].month:02}{in_dict["publishtimestamp"].day:02}') # unknown!
+        art_idx = int(f'{jahrgang}{in_dict["cms_id"]:05}') #dms id!
+        start_page_nr=0 #unknown!
+        end_page_nr=0 #unknown!
+
+        return OeazArticle(
+            id=art_idx,
+            nummer=nummer,
+            sort_nr=int(f"{jahrgang}{nummer}"),
+            jahrgang=jahrgang,
+            start_page_nr= start_page_nr,
+            end_page_nr= end_page_nr,
+            rubrik = in_dict["channelnameraw"],
+            title = title,
+            html_raw=html_raw,
+            created=in_dict["createdate"],
+            pubdate=in_dict["publishtimestamp"],
+            url=in_dict["url"],
+            author=author,
+            teaser = teaser,
+        )
