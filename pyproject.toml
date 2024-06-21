@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "aco-ui"
+version = "0.1.0"
+description = ""
+authors = ["rapps <stefan.rapp@avellinus.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pymongo = "^4.7.2"
+pydantic-mongo = "^2.3.0"
+loguru = "^0.7.2"
+requests = "^2.32.3"
+flask="3.0.2"
+flask_paginate="2023.10.24"
+flask_simplelogin="0.1.2"
+python-dotenv="^1.0.1"
+lxml = "^5.2.2"
+
+[tool.poetry.group.dev.dependencies]
+setuptools = "^70.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+

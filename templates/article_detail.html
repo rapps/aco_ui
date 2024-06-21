@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACMaster Data</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+{% include 'header.html' %}
+    <div class="main-container">
+        <div  class="test hero">
+            <p>publiziert: {{article.pubdate.strftime('%d.%m.%Y')}}</p>
+        </div>
+        <div class="content_parent">
+            <div class="toc">
+                <ul>
+                {% for entry in toc %}
+                    {% if entry.class %}
+                        <li class="{{ entry.class }}">{{ entry.title }}</li>
+                    {% else %}
+                        <li><a href="{{ entry.url }}">{{ entry.title }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                </ul>
+            </div>
+            <div class="extraction">
+                {% for h in article.html_raw %}
+                    {{ h }}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="pdf">{% for p in pdf %}<iframe  width="200px" height="300px" src="data:application/pdf;base64,{{p}}">{%endfor%}</div>
+
+</body>
+
+</html>

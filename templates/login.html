@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ACMaster Data</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    </head>
+
+  <body>
+
+      <div class="main-container">
+        <h1>Simple Login:</h1>
+       {%if form.errors %}
+         <ul class="alert alert-danger">
+           {% for field, errors in form.errors.items() %}
+             <li>{{field}} {% for error in errors %}{{ error }}{% endfor %}</li>
+           {% endfor %}
+         </ul>
+       {% endif %}
+       <form action="{{ url_for('simplelogin.login', next=request.args.get('next', '/')) }}" method="post">
+            <div class="form-group">
+            {{ form.csrf_token }}
+            {{form.username.label}}<div class="form-control">{{ form.username }}</div><br>
+            {{form.password.label}}<div class="form-control"> {{ form.password }}</div><br>
+
+            <button type="submit" value="Send">Login</button>
+       </form>
+      <div>
+  </body>
+
+</html>

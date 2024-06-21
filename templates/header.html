@@ -1,0 +1,9 @@
+
+    <header>
+        <a href="/"><img src="{{ url_for('static', filename='logo_border.max-150x150.png') }}"></img></a>
+        <h1><a href="/">ACodex AI-Extraction Showcase</a></h1>
+        <form id="searchForm" action="/search_acmaster" method="get">
+            <input type="text" name="q" id="searchInput" placeholder="Suche nach Name oder AG" {% if q %}value="{{q}}"{% endif %}>
+            <button type="submit">Search</button>
+        </form>
+    </header>
