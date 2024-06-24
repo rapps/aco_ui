@@ -34,8 +34,7 @@
                 {% endfor %}
             </div>
         </div>
-        <div class="pdf">{% for p in pdf %}<iframe  width="200px" height="300px" src="data:application/pdf;base64,{{p}}">{%endfor%}</div>
+        <div class="images">{% for i in images %}<a href="{{ article.url }}"  target="_blank"><img  width="200px" height="300px" src="data:image/png;base64,{{i}}"></a>{%endfor%}</div>
 
 </body>
-
 </html>

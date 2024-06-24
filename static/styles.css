@@ -287,17 +287,20 @@ div.content_parent {
 
 div.toc {
     width: 20%;
+    padding-right: 20px;
+    font-size: 0.8em;
 }
 div.extraction {
     width: 50%;
 }
-div.pdf {
-    width: 40%;
+div.images {
+  width: 40%;
   position: fixed;
   top: 20%;
   right: 0;
   width: 300px;
 }
+
 article.promotional {
     background-image: repeating-linear-gradient(
       45deg,

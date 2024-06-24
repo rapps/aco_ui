@@ -15,6 +15,7 @@ from pymongo.errors import DuplicateKeyError
 import settings
 from db.mongo import oeaz_structured, LongSessionCursor, oeaz_article
 from helpers.ws import replaceWS
+from models.file import ACOFile
 
 logger = settings.logger
 
@@ -140,7 +141,7 @@ class OeazAuthor(BaseModel):
 
 
 class OeazArticle(BaseModel):
-    id: Union[int, str]
+    id: int
     nummer: int
     sort_nr: int
     jahrgang: int
@@ -153,6 +154,7 @@ class OeazArticle(BaseModel):
     pubdate: datetime.datetime
     url:Union[str, None] = None
     author:List[OeazAuthor]=[]
+    images: List[PydanticObjectId] = []
     teaser: Union[str, None] = None
     source: int=0 # 0 = oeaz_oline, 1 = archive
     processed: int = 0
@@ -180,8 +182,11 @@ class OeazArticle(BaseModel):
         return lsc.iter()
 
     @staticmethod
-    def get_paginated(skip:int, limit:int):
-        return [OeazArticle(**item) for item in oeaz_article.find().sort("pubdate", 1).skip(skip).limit(limit)]
+    def get_paginated(skip:int, limit:int, query:Dict=None):
+        if query:
+            return [OeazArticle(**item) for item in oeaz_article.find(query).sort("pubdate", 1).skip(skip).limit(limit)]
+        else:
+            return [OeazArticle(**item) for item in oeaz_article.find().sort("pubdate", 1).skip(skip).limit(limit)]
 
     @staticmethod
     def delete(id: int) -> None:
