@@ -4,7 +4,7 @@ import json
 import re
 from pathlib import Path
 from string import Template
-from typing import List, Union, Generator, Dict, Literal, Optional
+from typing import List, Union, Generator, Dict, Literal, Optional, Any
 
 from lxml import etree, html
 import html as html_
@@ -189,6 +189,16 @@ class OeazArticle(BaseModel):
             return [OeazArticle(**item) for item in oeaz_article.find().sort("pubdate", 1).skip(skip).limit(limit)]
 
     @staticmethod
+    def get_by_month_and_year_sorted(month:int, year:int, sort:int):
+        query = {
+            "$expr": {
+                "$and": [{"$eq": [{"$month": "$pubdate"}, month]},
+                         {"$eq": [{"$year": "$pubdate"}, year]}]
+            }
+        }
+        return [OeazArticle(**item) for item in oeaz_article.find(query).sort("id", sort)]
+
+    @staticmethod
     def delete(id: int) -> None:
         oeaz_article.delete_one({"id": id})
 
@@ -268,3 +278,77 @@ class OeazArticle(BaseModel):
             author=author,
             teaser = teaser,
         )
+
+    @staticmethod
+    def get_month_and_year_dict() -> list[Any]:
+        return  list(oeaz_article.aggregate([
+                {"$sort": {"id": 1}},
+                {"$group":
+                    {"_id": {
+                        "year": {"$year": "$pubdate"},
+                        "month": {"$month": "$pubdate"}
+                        },
+                    },
+                },
+                {"$sort": {"_id": -1}},
+        ]))
+
+    @staticmethod
+    def get_pubyear_tree() -> List:
+        test = OeazArticle.get_month_and_year_dict()
+        tree = {}
+        tree_list = []
+        for i in test:
+            year = i["_id"]['year']
+            month = i["_id"]['month']
+            if year in tree:
+                tree[year][month] = {}
+            else:
+                tree[year] = {month: {}}
+        for year, months in tree.items():
+            y_node = {
+                "text": year,
+                "icon": "fa fa-inbox fa-fw",
+                "nodes": []
+            }
+            tree_list.append(y_node)
+            for month, articles in months.items():
+                m_node = {
+                    "text": month,
+                    "icon": "fa fa-inbox fa-fw",
+                    "class": "text-info",
+                    "href": f"/{year}/{month}/"
+                }
+                y_node["nodes"].append(m_node)
+                # for article in articles:
+                #     a_node = {
+                #         "text": article["title"],
+                #         "icon": "fa fa-inbox fa-fw",
+                #         "class": "text-info",
+                #         "href": f"/detail/{article['id']}/"
+                #     }
+                #     m_node["nodes"].append(a_node)
+        return tree_list
+
+    @staticmethod
+    def get_pubmonth_tree(year:int, month:int) -> List:
+        tree_list = []
+        articles = OeazArticle.get_by_month_and_year_sorted(year=year, month=month, sort=1)
+        for article in articles:
+            a_node = {
+                "text": article.title,
+                "icon": "fa fa-inbox fa-fw",
+                "class": "text-info",
+                "href": f"/detail/{article.id}/"
+            }
+            tree_list.append(a_node)
+
+        return tree_list
+
+# {"$project": {
+#     "_id": 0,
+#     "id": 1,
+#
+#     "year": "$_year",
+#     "month": "$_month"
+# }},

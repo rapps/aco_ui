@@ -6,35 +6,55 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACMaster Data</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+	<link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+		  integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+	<link href="{{ url_for('static', filename='bstreeview.css') }}" rel="stylesheet">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 
 <body>
-{% include 'header.html' %}
-    <div class="main-container">
-        <div  class="test hero">
-            <p>publiziert: {{article.pubdate.strftime('%d.%m.%Y')}}</p>
-            <p>Quelle: <a href="{{article.url}}" target="_blank">{% if article.source |int != 0 %}Archiv{% else%}ÖAZ-Online{%  endif %}</a></p>
-        </div>
-        <div class="content_parent">
-            <div class="toc">
-                <ul>
-                {% for entry in toc %}
-                    {% if entry.class %}
-                        <li class="{{ entry.class }}">{{ entry.title }}</li>
-                    {% else %}
-                        <li><a href="{{ entry.url }}">{{ entry.title }}</a></li>
-                    {% endif %}
-                {% endfor %}
-                </ul>
-            </div>
-            <div class="extraction">
-                {% for h in article.html_raw %}
-                    {{ h }}
-                {% endfor %}
-            </div>
-        </div>
-        <div class="images">{% for i in images %}<a href="{{ article.url }}"  target="_blank"><img  width="200px" height="300px" src="data:image/png;base64,{{i}}"></a>{%endfor%}</div>
+{##}
+	<div class="container-fluid">
+        {% include 'header.html' %}
 
+		<div class="content">
+			<div class="row">
+				<div id="col-tree" class="col-md-3 pt-5">
+                    <div id="tree">
+
+					</div>
+				</div>
+                <div id="col-article" class="col-md-6 pt-5">
+                    {% for h in article.html_raw %}
+                        {{ h }}
+                    {% endfor %}
+				</div>
+                <div class="col-md-3 pt-5">
+					<div class="images">{% for i in images %}<a href="{{ article.url }}"  target="_blank"><img  width="200px" height="300px" src="data:image/png;base64,{{i}}"></a>{%endfor%}</div>
+				</div>
+			</div>
+		</div>
+	</div>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='bstreeview.js') }}"></script>
+	<script>
+		$(function () {
+
+			var json = {{ tree | safe }}
+
+			$('#tree').bstreeview({
+				data: json,
+                expandIcon: 'fa fa-angle-down fa-fw',
+                collapseIcon: 'fa fa-angle-right fa-fw',
+                indent: 1.25,
+                parentsMarginLeft: '1.25rem',
+                openNodeLinkOnNewTab: false
+			});
+		});
+	</script>
 </body>
+
 </html>
