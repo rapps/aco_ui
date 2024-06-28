@@ -1,0 +1,15 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+div#col-tree, div#col-article {
+    max-height: 100vh;          /* not available in Bootstrap */
+    overflow-y: scroll;
+}
+
+article.promotional::before{
+    content: "Werbung:"
+}
+article.promotional {
+    color: darkgrey;
+}
