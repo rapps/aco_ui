@@ -282,15 +282,15 @@ class OeazArticle(BaseModel):
     @staticmethod
     def get_month_and_year_dict() -> list[Any]:
         return  list(oeaz_article.aggregate([
-                {"$sort": {"id": 1}},
-                {"$group":
-                    {"_id": {
-                        "year": {"$year": "$pubdate"},
-                        "month": {"$month": "$pubdate"}
-                        },
-                    },
-                },
-                {"$sort": {"_id": -1}},
+            {"$sort": {"bezeichnung": 1}},
+            {"$group":
+                {
+                    "_id": {"$substrCP": ['$bezeichnung', 0, 2], },
+                    "prod": {"$push": {"bezeichnung": '$bezeichnung', "id": "$id"}}
+
+                }
+            },
+            {"$sort": {"_id": 1}},
         ]))
 
     @staticmethod
@@ -317,7 +317,7 @@ class OeazArticle(BaseModel):
                     "text": month,
                     "icon": "fa fa-inbox fa-fw",
                     "class": "text-info",
-                    "href": f"/{year}/{month}/"
+                    "href": f"/oeaz/{year}/{month}/"
                 }
                 y_node["nodes"].append(m_node)
                 # for article in articles:
@@ -339,7 +339,7 @@ class OeazArticle(BaseModel):
                 "text": article.title,
                 "icon": "fa fa-inbox fa-fw",
                 "class": "text-info",
-                "href": f"/detail/{article.id}/"
+                "href": f"/oeaz/detail/{article.id}/"
             }
             tree_list.append(a_node)
 

@@ -10,17 +10,17 @@ logger = settings.logger
 client = MongoClient(settings.MONGO_ENDPOINT)
 db = client.aco
 sis = db["sis"]
+aco = db["aco"]
 oeaz_pdf = db["oeaz_pdf"]
 oeaz_structured = db["oeaz_structured"]
 oeaz_article = db["oeaz_article"]
-oeaz_mesh = db["oeaz_mesh"]
 fs = gridfs.GridFS(db)
 
 sis.create_index([('id', 1)], unique=True)
+aco.create_index([('id', 1)], unique=True)
 oeaz_pdf.create_index([('id', 1)], unique=True)
 oeaz_structured.create_index([('id', 1)], unique=True)
 oeaz_article.create_index([('id', 1)], unique=True)
-oeaz_mesh.create_index([('id', 1)], unique=True)
 db.fs.files.create_index([('id', 1)], unique=True)
 
 class LongSessionCursor():
