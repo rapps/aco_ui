@@ -31,16 +31,19 @@ def index_oeaz(year=None, month=None):
     data_page = OeazArticle.get_by_month_and_year_sorted(month=month, year=year, sort=1)
     return render_template('index_oeaz.html', data_page=data_page, tree=tree_str)
 
-@app.get('/') #aco
-def index_aco():
+@app.get('/') #aco aco/
+@app.get('/aco/<bez_start>/')
+def index_aco(bez_start=None):
     treelist = ACOMeta.get_by_name_groups()
     tree_str = json.dumps(treelist)
-    data_page = {}
-    return render_template('index_oeaz.html', data_page=data_page, tree=tree_str)
+    if bez_start is None:
+        bez_start = treelist[0]["nodes"][0]["text"]
+    data_page = ACOMeta.get_by_bez_start(bez_start)
+    return render_template('index_aco.html', data_page=data_page, tree=tree_str)
 
 
 @app.get('/oeaz/detail/<article_id>/')
-def detail(article_id:int):
+def detail_article(article_id:int):
     article:OeazArticle = OeazArticle.get(id=int(article_id))
     if not article:
         abort(404)
@@ -52,6 +55,17 @@ def detail(article_id:int):
     article.html_raw = [markupsafe.Markup(etree.tounicode(a)) for a in html.fromstring(article.html_raw).xpath("//body/*")]
     return render_template('detail_oeaz.html', article=article, tree=tree_str, images=images)
 
+@app.get('/aco/detail/<aco_id>/')
+def detail_aco(aco_id:int):
+    #todo: ACOMeta id needs int id
+    aco:ACOMeta = ACOMeta.get(id=aco_id)
+    if not aco:
+        abort(404)
+    treelist = ACOMeta.get_by_name_groups()
+    tree_str = json.dumps(treelist)
+
+    #article.html_raw = [markupsafe.Markup(etree.tounicode(a)) for a in html.fromstring(article.html_raw).xpath("//body/*")]
+    return render_template('detail_aco.html', aco=aco, tree=tree_str)
 
 
 

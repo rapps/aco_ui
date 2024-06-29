@@ -7,12 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACMaster Data</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-
 	<link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
 		  integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
 	<link href="{{ url_for('static', filename='bstreeview.css') }}" rel="stylesheet">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles_test.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 
 <body>
@@ -23,32 +22,28 @@
 		<div class="content">
 			<div class="row">
 				<div id="col-tree" class="col-md-3 pt-5">
-					<div id="tree">
+                    <div id="tree">
 
 					</div>
 				</div>
-                <div id="col-article" class="col-md-9 pt-5">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>id</th>
-                                <th>Bezeichnung</th>
-                            </tr>
-                        </thead>
+                <div id="col-article" class="col-md-6 pt-5">
+                    <h1>{{ aco.bezeichnung }}</h1>
+                    <p><b>Zulassungsnummer: </b>{{ aco.id }}</p>
+{#                    <p><b>Pharmazentralnummer(n): </b>{% for pzn in aco.pzn %}{{ pzn }}{% endfor %}</p>#}
+                    <p><b>Handel: </b>{% if i_trade %}Ja{% else %}Nein{% endif %}</p>
+{#                    <p><b>Indikation: </b> [Code: {{ aco.indications }}]</p>#}
+                    <p><b>Wirkstoffe: </b>{% for wirkstoff in aco.wirkstoffe %}{{ wirkstoff.bezeichnung }}{% endfor %}</p>
+                    {% for kt in aco.kurztexte %}
+                        <p><b>{{ kt.bezeichnung }}: </b>{{ kt.text }}</p>
+                    {% endfor %}
+                    {% for pkg in aco.packungen %}
+                        <p><b>{{ pkg.pzn }}: </b>{{ pkg.bezeichnung }}</p>
+                    {% endfor %}
 
-                        <tbody>
-                            {% for aco in data_page %}
-                            <tr>
-                                <td>{{ aco.id }}</td>
-                                <td><a href="/aco/detail/{{ aco.id }}">{{ aco.bezeichnung }}</a></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
 				</div>
-{#                <div class="col-md-3 pt-5">#}
-{#					related#}
-{#				</div>#}
+                <div class="col-md-3 pt-5">
+                    <p>Context</p>
+                </div>
 			</div>
 		</div>
 	</div>

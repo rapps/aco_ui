@@ -282,15 +282,15 @@ class OeazArticle(BaseModel):
     @staticmethod
     def get_month_and_year_dict() -> list[Any]:
         return  list(oeaz_article.aggregate([
-            {"$sort": {"bezeichnung": 1}},
-            {"$group":
-                {
-                    "_id": {"$substrCP": ['$bezeichnung', 0, 2], },
-                    "prod": {"$push": {"bezeichnung": '$bezeichnung', "id": "$id"}}
-
-                }
-            },
-            {"$sort": {"_id": 1}},
+                {"$sort": {"id": 1}},
+                {"$group":
+                    {"_id": {
+                        "year": {"$year": "$pubdate"},
+                        "month": {"$month": "$pubdate"}
+                        },
+                    },
+                },
+                {"$sort": {"_id": -1}},
         ]))
 
     @staticmethod

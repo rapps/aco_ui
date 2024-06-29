@@ -74,7 +74,7 @@ class ACOMeta(SISMeta):
 
     @staticmethod
     def get_dicts_by_query(query: Dict) -> Generator:
-        lsc = LongSessionCursor(sis, query)
+        lsc = LongSessionCursor(aco, query)
         return lsc.iter()
 
     def save(self) -> 'ACOMeta':
@@ -88,6 +88,9 @@ class ACOMeta(SISMeta):
              logger.exception("Something wrong with the save")
         return self
 
+    @staticmethod
+    def get_by_bez_start(bez_start:str):
+        return [ACOMeta(**item) for item in ACOMeta.get_dicts_by_query({"bezeichnung": {'$regex': f'^{bez_start}.*', '$options': 'i'}})]
 
     @staticmethod
     def get_name_groups(substring_len:int) -> list[Any]:
@@ -95,32 +98,38 @@ class ACOMeta(SISMeta):
             {"$sort": {"bezeichnung": 1}},
             {"$group":
                 {
-                    "_id": {"$substrCP": ['$bezeichnung', 0, 2], },
-                    "products": {"$push": {"bezeichnung": '$bezeichnung', "id": "$id"}}
-
+                    "_id": {"$substrCP": ['$bezeichnung', 0, 3], },
                 }
             },
             {"$sort": {"_id": 1}},
         ]))
+
+
     @staticmethod
     def get_by_name_groups():
         test = ACOMeta.get_name_groups(2)
         tree_list = []
+
+        from collections import defaultdict
+
+        groups = defaultdict(list)
         for entry in test:
-            sb_node = {
-                "text": entry["_id"],
+            groups[entry["_id"][:1]].append(entry)
+        for k, v in groups.items():
+            abc_node = {
+                "text": k,
                 "icon": "fa fa-inbox fa-fw",
                 "nodes": []
             }
-            tree_list.append(sb_node)
-            for product in entry["products"]:
+            tree_list.append(abc_node)
+            for entry in v:
                 p_node = {
-                    "text": product["bezeichnung"],
+                    "text": entry["_id"],
                     "icon": "fa fa-inbox fa-fw",
                     "class": "text-info",
-                    "href": f"/aco/{product['id']}/"
+                    "href": f"/aco/{entry['_id']}/"
                 }
-                sb_node["nodes"].append(p_node)
+                abc_node["nodes"].append(p_node)
 
         return tree_list
 
