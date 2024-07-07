@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACMaster Data</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" integrity="sha512-dPXYcDub/aeb08c63jRq/k6GaKccl256JQy/AnOq7CAnEZ9FzSL9wSbcZkMp4R26vBsMLFYH4kQ67/bbV8XaCQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 	<link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
 		  integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
 	<link href="{{ url_for('static', filename='bstreeview.css') }}" rel="stylesheet">
@@ -31,7 +32,7 @@
                     <h1>{{ aco.bezeichnung }}</h1>
                     <p><b>Zulassungsnummer: </b>{{ aco.id }}</p>
 {#                    <p><b>Pharmazentralnummer(n): </b>{% for pzn in aco.pzn %}{{ pzn }}{% endfor %}</p>#}
-                    <p><b>Handel: </b>{% if i_trade %}Ja{% else %}Nein{% endif %}</p>
+{#                    <p><b>Handel: </b>{% if i_trade %}Ja{% else %}Nein{% endif %}</p>#}
 {#                    <p><b>Indikation: </b> [Code: {{ aco.indications }}]</p>#}
                     <p><b>Wirkstoffe: </b>{% for wirkstoff in aco.wirkstoffe %}{{ wirkstoff.bezeichnung }}{% endfor %}</p>
                     {% for kt in aco.kurztexte %}
@@ -42,8 +43,21 @@
                     {% endfor %}
 
 				</div>
-                <div class="col-md-3 pt-5">
-                    <p>Context</p>
+                <div class="col-md-3 pt-5 related">
+                    {% for cat, val in related.items() %}
+                        {% if val %}
+                        <h1>{{ cat }}</h1>
+                            {% for v in val %}
+                                <div>
+                                    <p><b>Konnex:</b> {{ v.hit }} [{{ v.score }}]</p>
+                                    <p><b>ÖAZ {{ v.article.jahrgang }}, {{ v.article.rubrik }}:</b> {{ v.article.title }}</p>
+                                    <p><b>Zusammenfassung:</b> {{ v.article.meta.summary }}</p>
+                                    <p><b>Stichworte:</b> {{ v.article.meta.keywords|join(', ') }}</p>
+                                    <hr/>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
                 </div>
 			</div>
 		</div>

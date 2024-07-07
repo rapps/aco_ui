@@ -136,7 +136,8 @@ def search_aco_bezeichnung(query):
     for hit in op.raw['hits']["hits"]:
         result.append({
             "name": hit["_source"]["bezeichnung"],
-            "id": hit["_source"]["id"]
+            "id": hit["_source"]["id"],
+            "icon": "bi bi-capsule"
             #"score": hit["_score"]
         })
     return result
@@ -158,7 +159,8 @@ def search_oeaz_bezeichnung(query):
         result.append({
             "name": hit["_source"]["product"] + " - " + hit["_source"]["title"],
             "id": hit["_source"]["id"],
-            "score": hit["_score"]
+            "score": hit["_score"],
+            "icon": "bi bi-capsule"
         })
 
     wirkstoffe = re.sub('^[^a-zA-ZäöüÄÖÜß ]+',"*", query)
@@ -176,7 +178,8 @@ def search_oeaz_bezeichnung(query):
         result.append({
             "name": hit["_source"]["substance"] + " - " + hit["_source"]["title"],
             "id": hit["_source"]["id"],
-            "score": hit["_score"]
+            "score": hit["_score"],
+            "icon": "bi bi-prescription2"
         })
 
     disease = re.sub('^[^a-zA-ZäöüÄÖÜß ]+',"*", query)
@@ -194,19 +197,87 @@ def search_oeaz_bezeichnung(query):
         result.append({
             "name": hit["_source"]["disease"] + " - " + hit["_source"]["title"],
             "id": hit["_source"]["id"],
-            "score": hit["_score"]
+            "score": hit["_score"],
+            "icon": "bi bi-virus2"
         })
     logger.info(f"size: {len(result)}")
-    return result
+    return  sorted(result, key=lambda x: x["score"])
 
-def search_articles(_client:Client, aco:ACOMeta):
+
+# def search_articles_by_aco(aco_id:int):
+#     result = {
+#         "product": [],
+#         "substance": [],
+#         "disease": []
+#     }
+#     aco = ACOMeta.get(id=aco_id)
+#     bezeichnung = re.sub('^[^a-zA-ZäöüÄÖÜß ]+',"*", aco.meta.product_name)
+#     logger.info(f"product: {bezeichnung}")
+#     op = _client.es.search(
+#         index="oeaz_products",
+#         query={
+#             "query_string": {
+#                 "fields": ["product"],
+#                 'query': f'{bezeichnung}' #todo: needs love
+#             }
+#         },
+#         source_includes=["id", "product"]
+#     )
+#     for hit in op.raw['hits']["hits"]:
+#         result["product"].append({
+#             "article": OeazArticle.get(hit["_source"]["id"]),
+#             "product": hit["_source"]["product"],
+#             "score": hit["_score"]
+#         })
+#
+#     wirkstoffe = " ".join([re.sub('^[^a-zA-ZäöüÄÖÜß ]+',"*", ws.bezeichnung) for ws in aco.wirkstoffe])
+#     logger.info(f"wirkstoffe: {wirkstoffe}")
+#     op = _client.es.search(
+#         index="oeaz_substances",
+#         query={
+#             "query_string": {
+#                 "fields": ["substance"],
+#                 'query': wirkstoffe #todo: needs love
+#             }
+#         },
+#         source_includes=["id", "substance"]
+#     )
+#     for hit in op.raw['hits']["hits"]:
+#         result["substance"].append({
+#             "article": OeazArticle.get(hit["_source"]["id"]),
+#             "substance": hit["_source"]["substance"],
+#             "score": hit["_score"]
+#         })
+#
+#     disease = " ".join([re.sub('^[^a-zA-ZäöüÄÖÜß ]+',"*", kt.text) for kt in aco.kurztexte if kt.bezeichnung=='Anwendungsgebiete'])
+#     logger.info(f"disease: {disease}")
+#     op = _client.es.search(
+#         index="oeaz_diseases",
+#         query={
+#             "query_string": {
+#                 "fields": ["disease"],
+#                 'query': disease #todo: needs love
+#             }
+#         },
+#         source_includes=["id", "disease"]
+#     )
+#     for hit in op.raw['hits']["hits"]:
+#         result["disease"].append({
+#             "article": OeazArticle.get(hit["_source"]["id"]),
+#             "disease": hit["_source"]["disease"],
+#             "score": hit["_score"]
+#         })
+#     return result
+
+def search_articles(aco:ACOMeta):
+    cutoff = 8.0
     #search in products
     result = {
-        "product": [],
-        "substance": [],
-        "disease": []
+        "Produkte": [],
+        "Wirkstoffe": [],
+        "Krankheitsbilder": []
     }
-    bezeichnung = re.sub('^[^a-zA-ZäöüÄÖÜß ]+',"*", aco.bezeichnung)
+    bezeichnung = re.sub('[^a-zA-ZäöüÄÖÜß]+'," ", aco.bezeichnung)
     logger.info(f"product: {bezeichnung}")
     op = _client.es.search(
         index="oeaz_products",
@@ -219,13 +290,14 @@ def search_articles(_client:Client, aco:ACOMeta):
         source_includes=["id", "product"]
     )
     for hit in op.raw['hits']["hits"]:
-        result["product"].append({
+        if hit["_score"] < cutoff: continue
+        result["Produkte"].append({
             "article": OeazArticle.get(hit["_source"]["id"]),
-            "product": hit["_source"]["product"],
+            "hit": hit["_source"]["product"],
             "score": hit["_score"]
         })
 
-    wirkstoffe = " ".join([re.sub('^[^a-zA-ZäöüÄÖÜß ]+',"*", ws.bezeichnung) for ws in aco.wirkstoffe])
+    wirkstoffe = " ".join([re.sub('[^a-zA-ZäöüÄÖÜß]+'," ", ws.bezeichnung) for ws in aco.wirkstoffe])
     logger.info(f"wirkstoffe: {wirkstoffe}")
     op = _client.es.search(
         index="oeaz_substances",
@@ -238,13 +310,14 @@ def search_articles(_client:Client, aco:ACOMeta):
         source_includes=["id", "substance"]
     )
     for hit in op.raw['hits']["hits"]:
-        result["substance"].append({
+        if hit["_score"] < cutoff: continue
+        result["Wirkstoffe"].append({
             "article": OeazArticle.get(hit["_source"]["id"]),
-            "substance": hit["_source"]["substance"],
+            "hit": hit["_source"]["substance"],
             "score": hit["_score"]
         })
 
-    disease = " ".join([re.sub('^[^a-zA-ZäöüÄÖÜß ]+',"*", kt.text) for kt in aco.kurztexte if kt.bezeichnung=='Anwendungsgebiete'])
+    disease = " ".join([re.sub('[^a-zA-ZäöüÄÖÜß ]+'," ", kt.text) for kt in aco.kurztexte if kt.bezeichnung=='Anwendungsgebiete'])
     logger.info(f"disease: {disease}")
     op = _client.es.search(
         index="oeaz_diseases",
@@ -257,9 +330,10 @@ def search_articles(_client:Client, aco:ACOMeta):
         source_includes=["id", "disease"]
     )
     for hit in op.raw['hits']["hits"]:
-        result["disease"].append({
+        if hit["_score"] < cutoff: continue
+        result["Krankheitsbilder"].append({
             "article": OeazArticle.get(hit["_source"]["id"]),
-            "disease": hit["_source"]["disease"],
+            "hit": hit["_source"]["disease"],
             "score": hit["_score"]
         })
     return result

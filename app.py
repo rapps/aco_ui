@@ -11,7 +11,7 @@ from helpers.save_article_id import save_id_from_title
 from models.aco import ACOMeta
 from models.file import ACOFile
 from models.oeaz_structured import OeazArticle, OeazStructuredIssue
-from search.elastic import search_aco_bezeichnung, search_oeaz_bezeichnung
+from search.elastic import search_aco_bezeichnung, search_oeaz_bezeichnung, search_articles
 
 app = Flask(__name__, template_folder='templates', static_folder="static")
 app.config['SECRET_KEY'] = 'something-secret'
@@ -51,6 +51,7 @@ def oeaz_search():
     results = [r for r in search_oeaz_bezeichnung(query)]
     return jsonify(results)
 
+
 @app.get('/') #aco aco/
 @app.get('/aco/<bez_start>/')
 def index_aco(bez_start=None):
@@ -70,15 +71,20 @@ def detail_aco(aco_id:int):
         abort(404)
     treelist = ACOMeta.get_by_name_groups()
     tree_str = json.dumps(treelist)
+    related_articles = search_articles(aco)
 
     #article.html_raw = [markupsafe.Markup(etree.tounicode(a)) for a in html.fromstring(article.html_raw).xpath("//body/*")]
-    return render_template('detail_aco.html', aco=aco, tree=tree_str, data_type="aco")
+    return render_template('detail_aco.html',
+                           aco=aco,
+                           tree=tree_str,
+                           related=related_articles,
+                           data_type="aco"
+                           )
 
 
 @app.route('/aco/search', methods=['POST'])
 def aco_search():
     query = request.json.get('query', '').lower()
-
     results = [r for r in search_aco_bezeichnung(query)]
     return jsonify(results)
 

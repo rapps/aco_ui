@@ -1,29 +1,21 @@
-<nav class="navbar navbar-light bg-light">
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
   <div class="container-fluid">
     <a class="navbar-brand" href="/"><img src="{{ url_for('static', filename='logo_border.max-150x150.png') }}" alt="" width="30" height="30"></a>
-    <form class="d-flex navbar-form">
-      <input type="text" id="typeahead" class="form-control me-2" placeholder="Suche...">
-    </form>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav">
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="#">ÖAZ-Daten</a>
+          <a class="nav-link" href="/">ACO</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Weiteres</a>
+          <a class="nav-link" href="/oeaz">ÖAZ</a>
         </li>
       </ul>
+      <form class="d-flex navbar-form">
+        <input type="text" id="typeahead" class="form-control me-2" placeholder="Suche...">
+      </form>
     </div>
   </div>
 </nav>
-
-
-{#  <div class="container-fluid">#}
-{#      <a class="navbar-brand" href="#">#}
-{##}
-{#      </a>#}
-{#    <span class="navbar-brand mb-0 h1">Navbar</span>#}
-{#  </div>#}

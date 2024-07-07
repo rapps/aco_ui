@@ -31,10 +31,11 @@
             {
                 name: 'remoteData',
                 display: 'name',
+                limit: 15,
                 source: remoteData,
                 templates: {
                     suggestion: function(data) {
-                        return '<a href="/{{ data_type }}/detail/' + data.id + '" class="list-group-item list-group-item-action">' + data.name + '</a>';
+                        return '<a href="/{{ data_type }}/detail/' + data.id + '" class="list-group-item list-group-item-action"><i class="'+data.icon+'"></i>&nbsp;&nbsp;&nbsp;' + data.name + '</a>';
                     }
                 }
             }
