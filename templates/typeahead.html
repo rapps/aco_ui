@@ -1,0 +1,43 @@
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/1.3.1/typeahead.bundle.min.js"></script>
+
+<p>{{ typeahead_data_type }}</p>
+<script>
+
+    $(document).ready(function() {
+        var remoteData = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            remote: {
+                url: '/{{ data_type }}/search',
+                prepare: function(query, settings) {
+                    settings.type = 'POST';
+                    settings.contentType = 'application/json';
+                    settings.data = JSON.stringify({ query: query });
+                    return settings;
+                },
+                transform: function(response) {
+                    return response;
+                }
+            }
+        });
+
+        $('#typeahead').typeahead(
+            {
+                hint: true,
+                highlight: true,
+                minLength: 1
+            },
+            {
+                name: 'remoteData',
+                display: 'name',
+                source: remoteData,
+                templates: {
+                    suggestion: function(data) {
+                        return '<a href="/{{ data_type }}/detail/' + data.id + '" class="list-group-item list-group-item-action">' + data.name + '</a>';
+                    }
+                }
+            }
+        );
+    });
+</script>

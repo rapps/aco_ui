@@ -2,7 +2,7 @@ import base64
 import json
 
 import markupsafe
-from flask import Flask, render_template, abort
+from flask import Flask, render_template, abort, request, jsonify
 from flask_paginate import get_page_args, Pagination
 from flask_simplelogin import SimpleLogin
 from lxml import etree, html
@@ -11,6 +11,7 @@ from helpers.save_article_id import save_id_from_title
 from models.aco import ACOMeta
 from models.file import ACOFile
 from models.oeaz_structured import OeazArticle, OeazStructuredIssue
+from search.elastic import search_aco_bezeichnung, search_oeaz_bezeichnung
 
 app = Flask(__name__, template_folder='templates', static_folder="static")
 app.config['SECRET_KEY'] = 'something-secret'
@@ -29,18 +30,7 @@ def index_oeaz(year=None, month=None):
         year = treelist[-1]["text"]
         month = treelist[-1]["nodes"][-1]["text"]
     data_page = OeazArticle.get_by_month_and_year_sorted(month=month, year=year, sort=1)
-    return render_template('index_oeaz.html', data_page=data_page, tree=tree_str)
-
-@app.get('/') #aco aco/
-@app.get('/aco/<bez_start>/')
-def index_aco(bez_start=None):
-    treelist = ACOMeta.get_by_name_groups()
-    tree_str = json.dumps(treelist)
-    if bez_start is None:
-        bez_start = treelist[0]["nodes"][0]["text"]
-    data_page = ACOMeta.get_by_bez_start(bez_start)
-    return render_template('index_aco.html', data_page=data_page, tree=tree_str)
-
+    return render_template('index_oeaz.html', data_page=data_page, tree=tree_str, data_type="oeaz")
 
 @app.get('/oeaz/detail/<article_id>/')
 def detail_article(article_id:int):
@@ -53,21 +43,44 @@ def detail_article(article_id:int):
     images = [base64.b64encode(ACOFile.get_by_objid(i).source).decode() for i in article.images]
 
     article.html_raw = [markupsafe.Markup(etree.tounicode(a)) for a in html.fromstring(article.html_raw).xpath("//body/*")]
-    return render_template('detail_oeaz.html', article=article, tree=tree_str, images=images)
+    return render_template('detail_oeaz.html', article=article, tree=tree_str, images=images, data_type="oeaz")
+
+@app.route('/oeaz/search', methods=['POST'])
+def oeaz_search():
+    query = request.json.get('query', '').lower()
+    results = [r for r in search_oeaz_bezeichnung(query)]
+    return jsonify(results)
+
+@app.get('/') #aco aco/
+@app.get('/aco/<bez_start>/')
+def index_aco(bez_start=None):
+    treelist = ACOMeta.get_by_name_groups()
+    tree_str = json.dumps(treelist)
+    if bez_start is None:
+        bez_start = treelist[0]["nodes"][0]["text"]
+    data_page = ACOMeta.get_by_bez_start(bez_start)
+    return render_template('index_aco.html', data_page=data_page, tree=tree_str, data_type="aco")
+
 
 @app.get('/aco/detail/<aco_id>/')
 def detail_aco(aco_id:int):
     #todo: ACOMeta id needs int id
-    aco:ACOMeta = ACOMeta.get(id=aco_id)
+    aco:ACOMeta = ACOMeta.get(id=int(aco_id))
     if not aco:
         abort(404)
     treelist = ACOMeta.get_by_name_groups()
     tree_str = json.dumps(treelist)
 
     #article.html_raw = [markupsafe.Markup(etree.tounicode(a)) for a in html.fromstring(article.html_raw).xpath("//body/*")]
-    return render_template('detail_aco.html', aco=aco, tree=tree_str)
+    return render_template('detail_aco.html', aco=aco, tree=tree_str, data_type="aco")
 
 
+@app.route('/aco/search', methods=['POST'])
+def aco_search():
+    query = request.json.get('query', '').lower()
+
+    results = [r for r in search_aco_bezeichnung(query)]
+    return jsonify(results)
 
 @app.get("/hello/{name}")
 async def say_hello(name: str):

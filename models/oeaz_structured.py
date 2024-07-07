@@ -140,6 +140,26 @@ class OeazAuthor(BaseModel):
         return  f"<a href='{self.path}'>{self.title_pre + ' ' if self.title_pre else ''}{self.first_name} {self.last_name}{' ' +self.title_post if self.title_post else ''}</a>"
 
 
+class OeazKeyword(BaseModel):
+    name: str
+    type: Literal["trade_name", "substance", "disease"]
+
+    def __str__(self):
+        return self.name
+
+    def __hash__(self):
+        print(hash(str(self)))
+        return hash(str(self))
+
+    def __eq__(self,other):
+        return self.name == other.name
+
+
+class OeazMeta(BaseModel):
+    summary: str
+    keywords: List[OeazKeyword] = []
+
+
 class OeazArticle(BaseModel):
     id: int
     nummer: int
@@ -157,6 +177,7 @@ class OeazArticle(BaseModel):
     images: List[PydanticObjectId] = []
     teaser: Union[str, None] = None
     source: int=0 # 0 = oeaz_oline, 1 = archive
+    meta: Union[OeazMeta, None] = None
     processed: int = 0
 
     def save(self) -> 'OeazArticle':
@@ -182,21 +203,8 @@ class OeazArticle(BaseModel):
         return lsc.iter()
 
     @staticmethod
-    def get_paginated(skip:int, limit:int, query:Dict=None):
-        if query:
-            return [OeazArticle(**item) for item in oeaz_article.find(query).sort("pubdate", 1).skip(skip).limit(limit)]
-        else:
-            return [OeazArticle(**item) for item in oeaz_article.find().sort("pubdate", 1).skip(skip).limit(limit)]
-
-    @staticmethod
-    def get_by_month_and_year_sorted(month:int, year:int, sort:int):
-        query = {
-            "$expr": {
-                "$and": [{"$eq": [{"$month": "$pubdate"}, month]},
-                         {"$eq": [{"$year": "$pubdate"}, year]}]
-            }
-        }
-        return [OeazArticle(**item) for item in oeaz_article.find(query).sort("id", sort)]
+    def get_paginated(skip:int, limit:int):
+        return [OeazArticle(**item) for item in oeaz_article.find().sort("pubdate", 1).skip(skip).limit(limit)]
 
     @staticmethod
     def delete(id: int) -> None:
@@ -292,7 +300,6 @@ class OeazArticle(BaseModel):
                 },
                 {"$sort": {"_id": -1}},
         ]))
-
     @staticmethod
     def get_pubyear_tree() -> List:
         test = OeazArticle.get_month_and_year_dict()
@@ -345,10 +352,62 @@ class OeazArticle(BaseModel):
 
         return tree_list
 
-# {"$project": {
-#     "_id": 0,
-#     "id": 1,
-#
-#     "year": "$_year",
-#     "month": "$_month"
-# }},
+    @staticmethod
+    def get_by_month_and_year_sorted(month:int, year:int, sort:int):
+        query = {
+            "$expr": {
+                "$and": [{"$eq": [{"$month": "$pubdate"}, month]},
+                         {"$eq": [{"$year": "$pubdate"}, year]}]
+            }
+        }
+        return [OeazArticle(**item) for item in oeaz_article.find(query).sort("id", sort)]
+
+    def add_gpt_meta(self, gpt_meta:Dict):
+        meta = OeazMeta(**{
+            "summary": gpt_meta["summary_article"],
+            "keywords": []
+        })
+
+        for kw in gpt_meta["trade_names"]:
+            meta.keywords.append(
+                OeazKeyword(
+                    name=kw["name"],
+                    type="trade_name"
+                ))
+            if 'synonym' in kw:
+                for s in kw["synonym"]:
+                    meta.keywords.append(OeazKeyword(
+                        name=s,
+                        type="trade_name"
+                    ))
+
+        for kw in gpt_meta["substances"]:
+            meta.keywords.append(
+                OeazKeyword(
+                    name=kw["name"],
+                    type="substance"
+                ))
+            if 'synonym' in kw:
+                for s in kw["synonym"]:
+                    meta.keywords.append(OeazKeyword(
+                        name=s,
+                        type="substance"
+                    ))
+
+        for kw in gpt_meta["diseases"]:
+            meta.keywords.append(
+                OeazKeyword(
+                    name=kw["name"],
+                    type="disease"
+                ))
+            if 'synonym' in kw:
+                for s in kw["synonym"]:
+                    meta.keywords.append(
+                        OeazKeyword(
+                            name=s,
+                            type="disease"
+                        ))
+        self.meta = meta
+        self.processed = 2
+        self.save()
+        logger.info(f"--> {[k for k in self.meta.keywords]}")

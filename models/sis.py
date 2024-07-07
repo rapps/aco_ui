@@ -44,7 +44,7 @@ class Indication(BaseModel):
 
 
 class SISMeta(BaseModel):
-    id:str
+    id:int
     bezeichnung:str
     # aco_productname:Union[str|None]=None
     # aco_packagename:Union[str|None]=None
@@ -75,6 +75,7 @@ class SISMeta(BaseModel):
         znumm = data.get("ZNUMM", None)
         i_trade = data.get("WVZdata", None)
         id_ = data.get("ZLNUMM", None)
+        id_ = int(id_)
         pi = data.get("isPrallelimport", False)
         pzns = []
         for pzn in data["PhzNr"]:
@@ -83,9 +84,9 @@ class SISMeta(BaseModel):
         for ind in data["IndicationGroups"]:
             indications.append(indication_dict[ind])
 
-        if id_.startswith("07"):
+        if str(id_).startswith("07"):
             pi = True
-        if id_ == "999999" or id_ == "999990": #Verweis
+        if str(id_) == "999999" or str(id_) == "999990": #Verweis
             faulty = True
         if exclude_fringe and (faulty or pi or not i_trade): return None
 

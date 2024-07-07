@@ -28,6 +28,7 @@ MARKER_ENDPOINT= os.environ.get("MARKER_ENDPOINT", None)
 OEAZ_ONLINE_STAGING_API = os.environ.get("OEAZ_ONLINE_STAGING_API", None)
 OEAZ_ONLINE_API = os.environ.get("OEAZ_ONLINE_API", None)
 ACO_API = os.environ.get('ACO_API', None)
+ELASTIC = os.environ.get('ELASTIC', None)
 # todo: put models to a volume
 # todo: models loaded will always pull huggingface - should be local
 #os.environ["TRANSFORMERS_OFFLINE"] = "1"

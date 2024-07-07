@@ -1,6 +1,7 @@
 from typing import Union, Any, Dict, List, Tuple, Generator
 
 from pydantic import BaseModel
+from pymongo import UpdateOne
 from pymongo.errors import DuplicateKeyError
 
 import settings
@@ -20,10 +21,17 @@ class ACOPackage(BaseModel):
     pzn:int
     bezeichnung:str
 
+class ACOGPTMeta(BaseModel):
+    product_name: str
+    dosage: Union[str, None] = None
+    dosage_form: Union[str, None] = None
+
 class ACOMeta(SISMeta):
     wirkstoffe: List[ACOActive]
     kurztexte: List[ACOKurztext]
     packungen:List[ACOPackage]
+    meta:Union[ACOGPTMeta, None] = None
+    processed:int=0
 
     @staticmethod
     def from_sismeta_and_aco_entries(sis_meta:SISMeta, aco_entry:Dict):
@@ -89,12 +97,13 @@ class ACOMeta(SISMeta):
         return self
 
     @staticmethod
-    def get_by_bez_start(bez_start:str):
-        return [ACOMeta(**item) for item in ACOMeta.get_dicts_by_query({"bezeichnung": {'$regex': f'^{bez_start}.*', '$options': 'i'}})]
+    def get_by_bez_start(bez_start: str):
+        return [ACOMeta(**item) for item in
+                ACOMeta.get_dicts_by_query({"bezeichnung": {'$regex': f'^{bez_start}.*', '$options': 'i'}})]
 
     @staticmethod
-    def get_name_groups(substring_len:int) -> list[Any]:
-        return  list(aco.aggregate([
+    def get_name_groups(substring_len: int) -> list[Any]:
+        return list(aco.aggregate([
             {"$sort": {"bezeichnung": 1}},
             {"$group":
                 {
@@ -103,7 +112,6 @@ class ACOMeta(SISMeta):
             },
             {"$sort": {"_id": 1}},
         ]))
-
 
     @staticmethod
     def get_by_name_groups():
@@ -133,3 +141,22 @@ class ACOMeta(SISMeta):
 
         return tree_list
 
+    @staticmethod
+    def set_all_atrade():
+        operations = []
+        for a in ACOMeta.get_dicts_by_query({}):
+            operations.append(
+                UpdateOne({"_id": a["_id"]}, {'$set': {'i_trade': False}})
+            )
+        aco.bulk_write(operations)
+
+    def add_gpt_meta(self, gpt_meta:Dict):
+        meta = ACOGPTMeta(**{
+            "product_name": gpt_meta["product_name"] if "product_name" in gpt_meta else None,
+            "dosage": gpt_meta["dosage"] if "dosage" in gpt_meta else None,
+            "dosage_form": gpt_meta["dosage_form"] if "dosage_form" in gpt_meta else None,
+        })
+        self.meta = meta
+        self.processed = 2
+        self.save()
+        logger.info(f"got meta for {self.bezeichnung}")
